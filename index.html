@@ -786,7 +786,7 @@ svg#curve{width:100%;aspect-ratio:300/170;height:auto;min-height:140px;display:b
         <input type="range" id="hc" min="0" max="2" step="0.1" value="0.6"><span class="fhint">5 SPC reports (Bristol 3&Prime;)</span></div>
 
       <div class="sec">View</div>
-      <div class="presets"><button class="pbtn on" id="mForecast">Hazard forecast</button><button class="pbtn" id="mPeak">Reported peak</button><button class="pbtn" id="mSnap">Snapshot</button></div>
+      <div class="presets"><button class="pbtn" id="mForecast">Hazard forecast</button><button class="pbtn on" id="mPeak">Reported peak</button><button class="pbtn" id="mSnap">Snapshot</button></div>
       <span class="fhint" id="modeHint" style="margin-top:2px"></span>
       <label class="tog" style="margin-top:8px"><span>Show forecast field (heatmap)</span><input type="checkbox" id="heatTog"><span class="switch"></span></label>
       <label class="tog"><span>Wind-damage reports (NWS)</span><input type="checkbox" id="windRepTog"><span class="switch"></span></label>
@@ -968,7 +968,7 @@ function drawCurve(){
 }
 
 // ---- state + wiring ----
-const state={crews:702,ramp:200,rate:2.7,pcao:30,wWind:1.0,wRep:0,rc:0.5,hc:0.6,view:"predict",heat:false,townTog:true,subs:false,grid:false,t:PEAK_H,R:null};
+const state={crews:702,ramp:200,rate:2.7,pcao:30,wWind:1.0,wRep:0,rc:0.5,hc:0.6,view:"peak",heat:false,townTog:true,subs:false,grid:false,t:PEAK_H,R:null};
 function recompute(){
   state.R=run(state);
   const maxT=Math.max(24,Math.ceil(state.R.total));
@@ -1021,10 +1021,10 @@ $("windRepTog").addEventListener("change",e=>{if(e.target.checked)windRepLayer.a
 $("subs").addEventListener("change",e=>{state.subs=e.target.checked;$("lgSub").style.display=state.subs?"flex":"none";drawOv();});
 $("grid").addEventListener("change",e=>{state.grid=e.target.checked;$("lgGrid").style.display=state.grid?"flex":"none";drawOv();});
 $("tscrub").addEventListener("input",e=>{state.t=+e.target.value;stop();refreshTime();drawCurve();drawOv();});
-$("reset").addEventListener("click",()=>{Object.assign(state,{crews:702,ramp:200,rate:2.7,pcao:30,wWind:1.0,wRep:0,rc:0.5,hc:0.6,view:"predict",t:PEAK_H});
+$("reset").addEventListener("click",()=>{Object.assign(state,{crews:702,ramp:200,rate:2.7,pcao:30,wWind:1.0,wRep:0,rc:0.5,hc:0.6,view:"peak",t:PEAK_H});
   $("crews").value=702;$("vCrews").textContent=702;$("ramp").value=200;$("vRamp").textContent=200;$("rate").value=2.7;$("vRate").textContent="2.7";
   $("pcao").value=30;$("vPcao").textContent=30;$("wwind").value=1.0;$("vWwind").textContent="1.0";$("wrep").value=0;$("vWrep").textContent="0.0";$("rc").value=0.5;$("vRc").textContent="0.50";$("hc").value=0.6;$("vHc").textContent="0.6";
-  $("tscrub").value=PEAK_H;syncTownLayer();setView("predict");});
+  $("tscrub").value=PEAK_H;syncTownLayer();setView("peak");});
 $("toStart").addEventListener("click",()=>{stop();state.t=PEAK_H;$("tscrub").value=PEAK_H;refreshTime();drawCurve();drawOv();});
 
 // play/animate restoration
