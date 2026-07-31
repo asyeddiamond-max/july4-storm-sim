@@ -802,6 +802,10 @@ const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 function crewsAt(t,cap){if(t<6)return 0;return Math.min(cap,(Math.floor((t-6)/24)+1)*200);}
 function makeSafe(t){if(t<=6)return 0;if(t>=12)return 1;return 0.35+0.65*(t-6)/6;}
+// customers-out(t) at a given fix-rate (for the P25-P75 "room for error" band)
+function curveAt(rate,cumSize,N,crews){const dt=0.25,tmax=160,cust=[];let acc=0;
+  for(let t=0;t<=tmax+1e-9;t+=dt){acc+=crewsAt(t,crews)*(rate/24)*makeSafe(t)*dt;const nf=Math.min(N,Math.floor(acc));
+    let cu=PCA-(nf>0?cumSize[nf-1]:0);if(t<PEAK_H)cu=PCA*(t/PEAK_H);cust.push(cu);}return cust;}
 const OBSD=DATA.observed.filter(p=>p[0]>=PEAK_H);
 
 // full model: places outages, assigns each a restoration time (customer-priority), builds curve
@@ -840,7 +844,9 @@ function run(S){
   let etr=NaN;for(let i=0;i<hs.length;i++){if(hs[i]>=PEAK_H&&cust[i]<=0.01*PCA){etr=hs[i];break;}}
   let total=tmax;for(let i=0;i<hs.length;i++){if(hs[i]>=PEAK_H&&cust[i]<=1){total=hs[i];break;}}
   let se=0;for(const p of OBSD){se+=(interp(hs,cust,p[0])-p[1])**2;}
-  return {N,outs,hs,cust,etr,total,rmse:Math.sqrt(se/OBSD.length)};
+  const custHi=curveAt(S.rate*1.5/2.3,cumSize,N,S.crews);   // P25 slow -> more still out (upper)
+  const custLo=curveAt(S.rate*3.1/2.3,cumSize,N,S.crews);   // P75 fast -> fewer still out (lower)
+  return {N,outs,hs,cust,custLo,custHi,etr,total,rmse:Math.sqrt(se/OBSD.length)};
 }
 function interp(hs,cust,h){let i=0;while(i<hs.length-1&&hs[i+1]<h)i++;const t0=hs[i],t1=hs[Math.min(i+1,hs.length-1)],c0=cust[i],c1=cust[Math.min(i+1,cust.length-1)];return t1===t0?c0:c0+(c1-c0)*(h-t0)/(t1-t0);}
 
@@ -872,6 +878,9 @@ function drawCurve(){
   for(let c=0;c<=100000;c+=25000){const y=ym(c);svg.appendChild(el("line",{x1:ML,y1:y,x2:VW-Rr,y2:y,stroke:grid,"stroke-width":1}));
     svg.appendChild(el("text",{x:ML-4,y:y+3,"text-anchor":"end",fill:muted,"font-size":8,"font-family":"var(--mono)"})).textContent=(c/1000)+"k";}
   for(let h=0;h<=120;h+=24){const x=xm(h);svg.appendChild(el("text",{x:x,y:VH-8,"text-anchor":"middle",fill:muted,"font-size":8,"font-family":"var(--mono)"})).textContent=h+"h";}
+  if(R.custLo&&R.custHi){let b="M";for(let i=0;i<R.hs.length;i++)b+=xm(R.hs[i]).toFixed(1)+" "+ym(R.custHi[i]).toFixed(1)+" L";
+    for(let i=R.hs.length-1;i>=0;i--)b+=xm(R.hs[i]).toFixed(1)+" "+ym(R.custLo[i]).toFixed(1)+" L";
+    b=b.replace(/ L$/,"")+"Z";svg.appendChild(el("path",{d:b,fill:acc,"fill-opacity":0.16,stroke:"none"}));}
   let d="M";for(let i=0;i<R.hs.length;i++)d+=(i?"L":"")+xm(R.hs[i]).toFixed(1)+" "+ym(R.cust[i]).toFixed(1)+" ";
   svg.appendChild(el("path",{d:d,fill:"none",stroke:acc,"stroke-width":2}));
   for(const p of DATA.observed){if(p[0]<PEAK_H&&p[1]<1000)continue;svg.appendChild(el("circle",{cx:xm(p[0]),cy:ym(p[1]),r:2.6,fill:css("--panel"),stroke:obs,"stroke-width":1.4}));}
@@ -889,7 +898,7 @@ function recompute(){
   $("kEtr").textContent=isFinite(state.R.etr)?Math.round(state.R.etr)+"h":">132h";
   $("kRmse").textContent=Math.round(state.R.rmse).toLocaleString();
   $("lgN").textContent=state.R.N.toLocaleString()+" outages";
-  $("curveNote").textContent="crews "+state.crews+" · fix-rate "+state.rate.toFixed(1)+" · rain "+(state.rain?"on":"off")+" · RMSE "+Math.round(state.R.rmse).toLocaleString();
+  $("curveNote").textContent="shaded = P25-P75 room for error · fix-rate "+state.rate.toFixed(1)+" · RMSE "+Math.round(state.R.rmse).toLocaleString()+" vs observed";
   markPreset();refreshTime();drawCurve();sizeOv();drawOv();
 }
 function markPreset(){document.querySelectorAll(".pbtn").forEach(b=>b.classList.toggle("on",Math.abs((+b.dataset.r)-state.rate)<1e-9));}
