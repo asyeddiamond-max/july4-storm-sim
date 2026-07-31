@@ -741,7 +741,7 @@ svg#curve{width:100%;height:auto;display:block}
   <header class="bar">
     <span class="mark">CT&middot;Grid</span>
     <h1>July&nbsp;4, 2026 Storm Simulator</h1>
-    <span class="sub">multi-hazard outage placement on real geography &middot; drag to explore, scrub time to replay restoration</span>
+    <span class="sub">hazard-model forecast vs. what actually happened &middot; drag to explore, scrub time to replay restoration</span>
   </header>
   <div class="body">
     <aside class="panel">
@@ -749,7 +749,7 @@ svg#curve{width:100%;height:auto;display:block}
         <div class="kpi"><span class="kl">Out now</span><span class="kv acc" id="kNow">--</span></div>
         <div class="kpi"><span class="kl">Outages</span><span class="kv" id="kN">--</span></div>
         <div class="kpi"><span class="kl">99% ETR</span><span class="kv" id="kEtr">--</span></div>
-        <div class="kpi"><span class="kl">RMSE vs obs</span><span class="kv" id="kRmse">--</span></div>
+        <div class="kpi"><span class="kl">Forecast &rho;</span><span class="kv acc" id="kSkill">--</span></div>
       </div>
 
       <div class="time">
@@ -769,24 +769,23 @@ svg#curve{width:100%;height:auto;display:block}
       <div class="field"><div class="frow"><span class="flabel">PCAO</span><span class="fval" id="vPcao">30</span></div>
         <input type="range" id="pcao" min="15" max="50" step="1" value="30"><span class="fhint">peak customers per outage &middot; July 4 &asymp; 30</span></div>
 
-      <div class="sec">Damage weighting</div>
-      <div class="field"><div class="frow"><span class="flabel">Reported damage</span><span class="fval" id="vWrep">1.2</span></div>
-        <input type="range" id="wrep" min="0" max="2.5" step="0.1" value="1.2"><span class="fhint">NWS tree/wire-down reports &mdash; the actual damage that caused outages</span></div>
-      <div class="field"><div class="frow"><span class="flabel">Modeled wind</span><span class="fval" id="vWwind">0.5</span></div>
-        <input type="range" id="wwind" min="0" max="2" step="0.1" value="0.5"><span class="fhint">HRRR gust field &middot; fills the gaps between reports</span></div>
+      <div class="sec">Forecast inputs</div>
+      <div class="field"><div class="frow"><span class="flabel">Modeled wind &times; canopy</span><span class="fval" id="vWwind">1.0</span></div>
+        <input type="range" id="wwind" min="0" max="2" step="0.1" value="1.0"><span class="fhint">HRRR gust &times; tree canopy &mdash; the pre-storm forecast driver</span></div>
+      <div class="field"><div class="frow"><span class="flabel">Reported damage</span><span class="fval" id="vWrep">0.0</span></div>
+        <input type="range" id="wrep" min="0" max="2.5" step="0.1" value="0"><span class="fhint">fold in NWS tree/wire-down reports &rarr; forecast becomes a nowcast</span></div>
       <div class="field"><div class="frow"><span class="flabel">Rain</span><span class="fval" id="vRc">0.50</span></div>
         <input type="range" id="rc" min="0" max="1.5" step="0.05" value="0.5"><span class="fhint">soil-saturation amplifier &middot; July 4 rain light</span></div>
       <div class="field"><div class="frow"><span class="flabel">Hail</span><span class="fval" id="vHc">0.6</span></div>
         <input type="range" id="hc" min="0" max="2" step="0.1" value="0.6"><span class="fhint">5 SPC reports (Bristol 3&Prime;)</span></div>
 
       <div class="sec">View</div>
-      <div class="presets"><button class="pbtn on" id="mPeak">Peak reconstruction</button><button class="pbtn" id="mSnap">Reported snapshot</button></div>
-      <span class="fhint" id="modeHint" style="margin-top:2px">estimated storm peak (~94k) &middot; lifts hard-hit towns restored before the snapshot</span>
-      <label class="tog" style="margin-top:8px"><span>Show damage weighting (heatmap)</span><input type="checkbox" id="heatTog"><span class="switch"></span></label>
-      <label class="tog"><span>Hazard model only (unanchored)</span><input type="checkbox" id="windOnly"><span class="switch"></span></label>
-      <label class="tog"><span>Town totals (circles)</span><input type="checkbox" id="townTog" checked><span class="switch"></span></label>
-      <label class="tog"><span>Hail reports (SPC)</span><input type="checkbox" id="hailTog"><span class="switch"></span></label>
+      <div class="presets"><button class="pbtn on" id="mForecast">Hazard forecast</button><button class="pbtn" id="mPeak">Reported peak</button><button class="pbtn" id="mSnap">Snapshot</button></div>
+      <span class="fhint" id="modeHint" style="margin-top:2px"></span>
+      <label class="tog" style="margin-top:8px"><span>Show forecast field (heatmap)</span><input type="checkbox" id="heatTog"><span class="switch"></span></label>
       <label class="tog"><span>Wind-damage reports (NWS)</span><input type="checkbox" id="windRepTog"><span class="switch"></span></label>
+      <label class="tog"><span>Hail reports (SPC)</span><input type="checkbox" id="hailTog"><span class="switch"></span></label>
+      <label class="tog"><span>Reported town totals (circles)</span><input type="checkbox" id="townTog" checked><span class="switch"></span></label>
       <label class="tog"><span>Show substations (HIFLD)</span><input type="checkbox" id="subs"><span class="switch"></span></label>
       <label class="tog"><span>Distribution grid (real roads)</span><input type="checkbox" id="grid"><span class="switch"></span></label>
       <button class="btn" id="reset">Reset to July&nbsp;4</button>
@@ -803,7 +802,7 @@ svg#curve{width:100%;height:auto;display:block}
         <div class="r"><span class="dotL"></span><span id="lgN">modeled outages</span></div>
         <div class="r" id="lgHail" style="display:none"><span style="width:10px;height:10px;border-radius:50%;background:#4a90d9;display:inline-block"></span>hail report (SPC)</div>
         <div class="r" id="lgWindRep" style="display:none"><span style="width:10px;height:10px;border-radius:50%;background:#d94a3d;display:inline-block"></span>wind-damage report (NWS)</div>
-        <div class="r" id="lgHeat" style="display:none"><span style="width:14px;height:9px;display:inline-block;background:linear-gradient(90deg,#ffde28,#ff3c1e);border-radius:2px"></span>damage weighting (low&rarr;high)</div>
+        <div class="r" id="lgHeat" style="display:none"><span style="width:14px;height:9px;display:inline-block;background:linear-gradient(90deg,#ffde28,#ff3c1e);border-radius:2px"></span>forecast field (low&rarr;high)</div>
         <div class="r" id="lgSub" style="display:none"><span class="sqL"></span>substation</div>
         <div class="r" id="lgGrid" style="display:none"><span style="width:13px;height:2px;background:#1a9850;display:inline-block;border-radius:2px"></span>distribution grid (real roads)</div>
         <div class="r" id="lgPlace" style="font-size:10px;opacity:.85">placement: real town totals &times; wind&middot;canopy&middot;rain&middot;hail (anchored)</div>
@@ -847,19 +846,29 @@ function severity(c,S){
 // damage. Unanchored: raw hazard field, no town constraint. Returns {cum, w} (w = per-cell weight, heatmap).
 function buildCum(S,sev){
   const cells=DATA.cells,n=cells.length,w=new Float64Array(n);let sum=0;
-  if(S.windOnly){for(let i=0;i<n;i++){w[i]=sev[i];sum+=w[i];}}
-  else{const TT=S.anchor==="snapshot"?DATA.townTotals:DATA.townPeak,ts=new Float64Array(TT.length);
+  if(S.view==="predict"){for(let i=0;i<n;i++){w[i]=sev[i];sum+=w[i];}}   // pure hazard field, no outage data
+  else{const TT=S.view==="snapshot"?DATA.townTotals:DATA.townPeak,ts=new Float64Array(TT.length);
     for(let i=0;i<n;i++){const tid=cells[i][6];if(tid>=0)ts[tid]+=sev[i];}
     for(let i=0;i<n;i++){const tid=cells[i][6];w[i]=(tid<0||ts[tid]<=0)?0:TT[tid]*sev[i]/ts[tid];sum+=w[i];}}
   const cum=new Float64Array(n);let c=0;for(let i=0;i<n;i++){c+=w[i]/sum;cum[i]=c;}
   return {cum,w};
 }
+// Spearman rank correlation, for the live forecast-skill readout
+function _rank(a){const ix=a.map((_,i)=>i).sort((x,y)=>a[x]-a[y]);const r=new Array(a.length);for(let k=0;k<ix.length;k++)r[ix[k]]=k;return r;}
+function spearman(a,b){const ra=_rank(a),rb=_rank(b),n=a.length;let ma=0,mb=0;for(let i=0;i<n;i++){ma+=ra[i];mb+=rb[i];}ma/=n;mb/=n;
+  let num=0,da=0,db=0;for(let i=0;i<n;i++){const x=ra[i]-ma,y=rb[i]-mb;num+=x*y;da+=x*x;db+=y*y;}return da&&db?num/Math.sqrt(da*db):0;}
 // full model: places outages, assigns each a restoration time (customer-priority), builds curve
 function run(S){
   const rng=mulberry32(SEED), cells=DATA.cells, n=cells.length;
   const sev=new Float64Array(n);for(let i=0;i<n;i++)sev[i]=severity(cells[i],S);
   const bc=buildCum(S,sev),cum=bc.cum;
   let wmax=0;for(let i=0;i<n;i++)if(bc.w[i]>wmax)wmax=bc.w[i];
+  // forecast skill: does the pure physics field predict WHICH towns were hit? (meaningful only in predict view)
+  let skill=null;
+  if(S.view==="predict"){const nT=DATA.townPeak.length,pe=new Float64Array(nT);
+    for(let i=0;i<n;i++){const t=cells[i][6];if(t>=0)pe[t]+=sev[i];}
+    const pa=[],ta=[];for(let t=0;t<nT;t++)if(DATA.townPeak[t]>0){pa.push(pe[t]);ta.push(DATA.townPeak[t]);}
+    skill=spearman(pa,ta);}
   const N=Math.round(PCA/S.pcao), mu=Math.log(S.pcao)-SIG*SIG/2;
   const locs=[];
   for(let k=0;k<N;k++){const u=rng();let lo=0,hi=n-1;while(lo<hi){const m=(lo+hi)>>1;if(cum[m]<u)lo=m+1;else hi=m;}
@@ -887,7 +896,7 @@ function run(S){
   let se=0;for(const p of OBSD){se+=(interp(hs,cust,p[0])-p[1])**2;}
   const custHi=curveAt(S.rate*1.5/2.3,cumSize,N,S.crews);   // P25 slow -> more still out (upper)
   const custLo=curveAt(S.rate*3.1/2.3,cumSize,N,S.crews);   // P75 fast -> fewer still out (lower)
-  return {N,outs,hs,cust,custLo,custHi,etr,total,rmse:Math.sqrt(se/OBSD.length),wfield:bc.w,wmax};
+  return {N,outs,hs,cust,custLo,custHi,etr,total,rmse:Math.sqrt(se/OBSD.length),wfield:bc.w,wmax,skill};
 }
 function interp(hs,cust,h){let i=0;while(i<hs.length-1&&hs[i+1]<h)i++;const t0=hs[i],t1=hs[Math.min(i+1,hs.length-1)],c0=cust[i],c1=cust[Math.min(i+1,cust.length-1)];return t1===t0?c0:c0+(c1-c0)*(h-t0)/(t1-t0);}
 
@@ -957,17 +966,22 @@ function drawCurve(){
 }
 
 // ---- state + wiring ----
-const state={crews:702,rate:2.7,pcao:30,wRep:1.2,wWind:0.5,rc:0.5,hc:0.6,anchor:"peak",windOnly:false,heat:false,townTog:true,subs:false,grid:false,t:PEAK_H,R:null};
+const state={crews:702,rate:2.7,pcao:30,wWind:1.0,wRep:0,rc:0.5,hc:0.6,view:"predict",heat:false,townTog:true,subs:false,grid:false,t:PEAK_H,R:null};
 function recompute(){
   state.R=run(state);
   const maxT=Math.max(24,Math.ceil(state.R.total));
   const sc=$("tscrub");sc.max=maxT;if(state.t>maxT)state.t=maxT;
   $("kN").textContent=state.R.N.toLocaleString();
   $("kEtr").textContent=isFinite(state.R.etr)?Math.round(state.R.etr)+"h":">132h";
-  $("kRmse").textContent=Math.round(state.R.rmse).toLocaleString();
-  const modeTxt=state.anchor==="snapshot"?"post-peak snapshot shape":"reconstructed peak shape";
-  $("lgN").textContent=state.R.N.toLocaleString()+(state.windOnly?" outages — pure hazard model":" peak outages — "+modeTxt);
-  $("lgPlace").textContent=state.windOnly?"placement: reported-damage · wind · canopy · rain · hail (unanchored)":"shape: est. peak per town, split by reported-damage · wind · canopy · rain · hail";
+  $("kSkill").textContent=(state.view==="predict"&&state.R.skill!=null)?state.R.skill.toFixed(2):"—";
+  if(state.view==="predict"){
+    const nowcast=state.wRep>0.05, r=(state.R.skill||0).toFixed(2);
+    $("lgN").textContent=state.R.N.toLocaleString()+(nowcast?" outages — hazard NOWCAST (physics + NWS reports)":" outages — hazard FORECAST (wind × canopy, no outage data)");
+    $("lgPlace").textContent="forecast skill ρ="+r+" vs reported peak "+(nowcast?"— reports folded in (nowcast)":"— pure pre-storm physics");
+  }else{
+    $("lgN").textContent=state.R.N.toLocaleString()+" peak outages — "+(state.view==="snapshot"?"post-peak snapshot shape":"reconstructed peak shape")+" (reported data)";
+    $("lgPlace").textContent="anchored to reported town data — reference, not a forecast";
+  }
   $("curveNote").textContent="shaded = P25-P75 room for error · fix-rate "+state.rate.toFixed(1)+" · RMSE "+Math.round(state.R.rmse).toLocaleString()+" vs observed";
   markPreset();refreshTime();drawCurve();sizeOv();drawOv();
 }
@@ -986,23 +1000,28 @@ $("wrep").addEventListener("input",e=>{state.wRep=+e.target.value;$("vWrep").tex
 $("wwind").addEventListener("input",e=>{state.wWind=+e.target.value;$("vWwind").textContent=state.wWind.toFixed(1);recompute();});
 $("rc").addEventListener("input",e=>{state.rc=+e.target.value;$("vRc").textContent=state.rc.toFixed(2);recompute();});
 $("hc").addEventListener("input",e=>{state.hc=+e.target.value;$("vHc").textContent=state.hc.toFixed(1);recompute();});
-function setAnchor(m){state.anchor=m;$("mPeak").classList.toggle("on",m==="peak");$("mSnap").classList.toggle("on",m==="snapshot");
-  $("modeHint").innerHTML=m==="peak"?"estimated storm peak (~94k) &middot; lifts hard-hit towns restored before the snapshot (New Britain 67&rarr;4,144)":"distributes the peak by the post-peak snapshot shape &middot; under-places fast-restored towns (New Britain nearly vanishes)";recompute();}
-$("mPeak").addEventListener("click",()=>setAnchor("peak"));
-$("mSnap").addEventListener("click",()=>setAnchor("snapshot"));
-function syncTownLayer(){if(state.townTog&&!state.windOnly)townLayer.addTo(map);else map.removeLayer(townLayer);}
+const MODEHINT={
+  predict:"PREDICTION from wind &times; tree canopy, no outage data &mdash; how a pre-storm hazard model saw July 4. Slide 'Reported damage' up to fold in the NWS reports (&rarr; nowcast) and watch &rho; climb.",
+  peak:"REPORTED data: estimated storm peak (~94k), hard-hit towns lifted to their peak (New Britain 67&rarr;4,144) &middot; reference, not a forecast.",
+  snapshot:"REPORTED data: the raw post-peak snapshot (~32k) &middot; under-counts fast-restored towns &middot; reference, not a forecast."};
+function setView(m){state.view=m;
+  $("mForecast").classList.toggle("on",m==="predict");$("mPeak").classList.toggle("on",m==="peak");$("mSnap").classList.toggle("on",m==="snapshot");
+  $("modeHint").innerHTML=MODEHINT[m];recompute();}
+$("mForecast").addEventListener("click",()=>setView("predict"));
+$("mPeak").addEventListener("click",()=>setView("peak"));
+$("mSnap").addEventListener("click",()=>setView("snapshot"));
+function syncTownLayer(){if(state.townTog)townLayer.addTo(map);else map.removeLayer(townLayer);}
 $("heatTog").addEventListener("change",e=>{state.heat=e.target.checked;$("lgHeat").style.display=state.heat?"flex":"none";drawOv();});
-$("windOnly").addEventListener("change",e=>{state.windOnly=e.target.checked;syncTownLayer();recompute();});
 $("townTog").addEventListener("change",e=>{state.townTog=e.target.checked;syncTownLayer();});
 $("hailTog").addEventListener("change",e=>{if(e.target.checked)hailLayer.addTo(map);else map.removeLayer(hailLayer);$("lgHail").style.display=e.target.checked?"flex":"none";});
 $("windRepTog").addEventListener("change",e=>{if(e.target.checked)windRepLayer.addTo(map);else map.removeLayer(windRepLayer);$("lgWindRep").style.display=e.target.checked?"flex":"none";});
 $("subs").addEventListener("change",e=>{state.subs=e.target.checked;$("lgSub").style.display=state.subs?"flex":"none";drawOv();});
 $("grid").addEventListener("change",e=>{state.grid=e.target.checked;$("lgGrid").style.display=state.grid?"flex":"none";drawOv();});
 $("tscrub").addEventListener("input",e=>{state.t=+e.target.value;stop();refreshTime();drawCurve();drawOv();});
-$("reset").addEventListener("click",()=>{Object.assign(state,{crews:702,rate:2.7,pcao:30,wRep:1.2,wWind:0.5,rc:0.5,hc:0.6,anchor:"peak",windOnly:false,t:PEAK_H});
+$("reset").addEventListener("click",()=>{Object.assign(state,{crews:702,rate:2.7,pcao:30,wWind:1.0,wRep:0,rc:0.5,hc:0.6,view:"predict",t:PEAK_H});
   $("crews").value=702;$("vCrews").textContent=702;$("rate").value=2.7;$("vRate").textContent="2.7";
-  $("pcao").value=30;$("vPcao").textContent=30;$("wrep").value=1.2;$("vWrep").textContent="1.2";$("wwind").value=0.5;$("vWwind").textContent="0.5";$("rc").value=0.5;$("vRc").textContent="0.50";$("hc").value=0.6;$("vHc").textContent="0.6";
-  $("windOnly").checked=false;$("tscrub").value=PEAK_H;syncTownLayer();setAnchor("peak");});
+  $("pcao").value=30;$("vPcao").textContent=30;$("wwind").value=1.0;$("vWwind").textContent="1.0";$("wrep").value=0;$("vWrep").textContent="0.0";$("rc").value=0.5;$("vRc").textContent="0.50";$("hc").value=0.6;$("vHc").textContent="0.6";
+  $("tscrub").value=PEAK_H;syncTownLayer();setView("predict");});
 $("toStart").addEventListener("click",()=>{stop();state.t=PEAK_H;$("tscrub").value=PEAK_H;refreshTime();drawCurve();drawOv();});
 
 // play/animate restoration
@@ -1018,7 +1037,7 @@ $("play").addEventListener("click",()=>{
   },90);
 });
 
-setTimeout(()=>{map.invalidateSize();sizeOv();recompute();},60);
+setTimeout(()=>{map.invalidateSize();sizeOv();setView(state.view);},60);
 </script>
 </body>
 </html>
